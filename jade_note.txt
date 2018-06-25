@@ -1,0 +1,1 @@
+El script de la función 'jade' es tomado de: https://github.com/camilleanne/pulse/blob/master/jade.py
