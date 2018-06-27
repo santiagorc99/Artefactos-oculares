@@ -14,13 +14,16 @@ class ocular_artifact_filter():
         parser.add_argument('-i','--archivo',help='Ingrese el nombre del archivo .edf a utilizar',type = str)
         parser.add_argument('-is','--in_sec',help='Segundo inicial del segmento',type = float)
         parser.add_argument('-fs','--fi_sec',help='Segundo final del segmento. Nota: in_sec debe ser menor que fi_sec',type = float)
+        parser.add_argument('-l','--lam',help='Parámetro lambda del filtro adaptativo.Por defecto lambda=0.9',type = float)
         parser.add_argument('-e','--edf',help='Nombre y dirección del archivo .edf de salida',type = str)
         parsedargs = parser.parse_args()
         arc = parsedargs.archivo
         ini_sec = parsedargs.in_sec
         final_sec = parsedargs.fi_sec
+        if parsedargs.lam != None:
+            if parsedargs.lam > 0:
+                self.l = parsedargs.lam
         output = parsedargs.edf
-        print('hello')
         return arc,ini_sec,final_sec,output
 
     def read_edf(self,nameEdf) :
@@ -130,19 +133,4 @@ if __name__ == '__main__':
     dataEEG_seg = adap1.segmentation(dataEEG,fs,ini_sec,final_sec)
     Xpp = adap1.filt(dataEEG_seg,channels_labels)
     adap1.write_edf(Xpp,headers,output)
-    
-    
-    #Graficas del Canal 2 original y filtrada.Muestreada a 250 Hz
-    import matplotlib.pyplot as plt
-    t =np.linspace(0,(len(dataEEG_seg[0])-1)/fs,len(dataEEG_seg[0]))
-    fig,subplt=plt.subplots(2,1,figsize=(8,5))
-    subplt[0].plot(t,dataEEG_seg[2])
-    subplt[0].set_title('Original')
-    subplt[0].grid()
-
-    subplt[1].plot(t,Xpp[2])
-    subplt[1].set_title('Filtrada')
-    subplt[1].grid()
-
-    plt.show() 
 
