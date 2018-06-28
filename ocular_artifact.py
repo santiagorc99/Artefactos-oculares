@@ -12,19 +12,15 @@ class ocular_artifact_filter():
     def argparse(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-i','--archivo',help='Ingrese el nombre del archivo .edf a utilizar',type = str)
-        parser.add_argument('-is','--in_sec',help='Segundo inicial del segmento',type = float)
-        parser.add_argument('-fs','--fi_sec',help='Segundo final del segmento. Nota: in_sec debe ser menor que fi_sec',type = float)
         parser.add_argument('-l','--lam',help='Parámetro lambda del filtro adaptativo.Por defecto lambda=0.9',type = float)
         parser.add_argument('-e','--edf',help='Nombre y dirección del archivo .edf de salida',type = str)
         parsedargs = parser.parse_args()
         arc = parsedargs.archivo
-        ini_sec = parsedargs.in_sec
-        final_sec = parsedargs.fi_sec
-        if parsedargs.lam != None:
+        if parsedargs.lam != None:    
             if parsedargs.lam > 0:
                 self.l = parsedargs.lam
         output = parsedargs.edf
-        return arc,ini_sec,final_sec,output
+        return arc,output
 
     def read_edf(self,nameEdf) :
         edf = pyedflib.EdfReader(nameEdf)
@@ -40,21 +36,13 @@ class ocular_artifact_filter():
         del edf
         return  dataEEG,fs,headers,channels_labels
 
-    def segmentation(self,in_signal,fs,ini_sec,final_sec):
-        n_ini = int(fs*ini_sec)
-        n_final = int(fs*final_sec)
-        n = n_final-n_ini
-        segment = np.zeros([len(in_signal),n])
-        for i in range (0,len(in_signal)):
-            segment[i] = in_signal[i][n_ini:n_final]
-        return segment
-
     def filt(self,dataEEG,channels_labels):
         index_ref = []
         for i in range(len(channels_labels)):
             channels_labels[i].upper()
             if ('FP1' in channels_labels[i]) or ('FP2' in channels_labels[i]) or ('F7' in channels_labels[i]) or ('F8' in channels_labels[i]):
-                index_ref.append(i)        
+                index_ref.append(i)
+                print(channels_labels[i])
         signal_size = dataEEG.shape
         nchannels = signal_size[0]
         nsamples = signal_size[1]
@@ -128,9 +116,7 @@ class ocular_artifact_filter():
 if __name__ == '__main__':
     
     adap1 = ocular_artifact_filter()
-    arc,ini_sec,final_sec,output = adap1.argparse()
+    arc,output = adap1.argparse()
     dataEEG ,fs,headers,channels_labels =  adap1.read_edf(arc)
-    dataEEG_seg = adap1.segmentation(dataEEG,fs,ini_sec,final_sec)
-    Xpp = adap1.filt(dataEEG_seg,channels_labels)
+    Xpp = adap1.filt(dataEEG,channels_labels)
     adap1.write_edf(Xpp,headers,output)
-
