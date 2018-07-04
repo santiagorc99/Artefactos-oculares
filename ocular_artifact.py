@@ -42,7 +42,6 @@ class ocular_artifact_filter():
             channels_labels[i].upper()
             if ('FP1' in channels_labels[i]) or ('FP2' in channels_labels[i]) or ('F7' in channels_labels[i]) or ('F8' in channels_labels[i]):
                 index_ref.append(i)
-                print(channels_labels[i])
         signal_size = dataEEG.shape
         nchannels = signal_size[0]
         nsamples = signal_size[1]
