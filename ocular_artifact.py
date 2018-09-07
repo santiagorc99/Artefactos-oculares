@@ -30,6 +30,7 @@ class ocular_artifact_filter():
         nsig = edf.getNSamples()[0]
         fs = edf.getSampleFrequency(0)
         dataEEG = np.zeros((nch,nsig))
+        
         for x in range(nch):
             dataEEG[x,:] = edf.readSignal(x)
         edf._close()
@@ -37,35 +38,42 @@ class ocular_artifact_filter():
         return  dataEEG,fs,headers,channels_labels
 
     def filt(self,dataEEG,channels_labels):
-        index_ref = []
-        for i in range(len(channels_labels)):
-            channels_labels[i].upper()
-            if ('FP1' in channels_labels[i]) or ('FP2' in channels_labels[i]) or ('F7' in channels_labels[i]) or ('F8' in channels_labels[i]):
-                index_ref.append(i)
-        signal_size = dataEEG.shape
-        nchannels = signal_size[0]
-        nsamples = signal_size[1]
-        index_data = np.arange(nchannels)
-        index_data = np.delete(index_data,index_ref)
-        transpose_dataEEG = np.transpose(dataEEG)
-        dataRef = np.take(transpose_dataEEG,index_ref,axis=1) 
-        dataEEG = np.take(transpose_dataEEG,index_data,axis=1)
-        dataRef = np.transpose(dataRef) 
-        dataEEG = np.transpose(dataEEG)
+        # Este try es utilizado para que cuando la matriz W no converja, no se presente ningún error al correr el programa.
+        # Si no se puede aplicar ICA, la salida de este método es la misma señal 'dataEEG', que es la misma señal contenida en el archivo '.edf' original sin procesamiento alguno.
+        try: 
+            index_ref = []
+            for i in range(len(channels_labels)):
+                channels_labels[i].upper()
+                if ('FP1' in channels_labels[i]) or ('FP2' in channels_labels[i]) or ('F7' in channels_labels[i]) or ('F8' in channels_labels[i]):
+                    index_ref.append(i)
+            signal_size = dataEEG.shape
+            nchannels = signal_size[0]
+            nsamples = signal_size[1]
+            index_data = np.arange(nchannels)
+            index_data = np.delete(index_data,index_ref)
+            transpose_dataEEG = np.transpose(dataEEG)
+            dataRef = np.take(transpose_dataEEG,index_ref,axis=1) 
+            dataEEG = np.take(transpose_dataEEG,index_data,axis=1)
+            dataRef = np.transpose(dataRef) 
+            dataEEG = np.transpose(dataEEG)
         
-        W = jadeR(dataEEG)
-        W = np.array(W)
-        Y = np.dot(W,dataEEG)
+            W = jadeR(dataEEG)
+            W = np.array(W)
+            Y = np.dot(W,dataEEG)
 
-        V = jadeR(dataRef)
-        V = np.array(V)
-        #T = np.dot(V,dataRef)
+            V = jadeR(dataRef)
+            V = np.array(V)
+            #T = np.dot(V,dataRef)
+
         
-        Xpp = self.filterAdaptative(Y,dataEEG, dataRef, W, V, index_ref,index_data,nsamples)
+            Xpp = self.filterAdaptative(Y,dataEEG, dataRef, W, V, index_ref,index_data,nsamples)  
+            for i in range(0,np.size(index_ref)):
+                Xpp = np.insert( Xpp, index_ref[i], transpose_dataEEG[:,index_ref[i]], axis=0)
 
-        for i in range(0,np.size(index_ref)):
-            Xpp = np.insert( Xpp, index_ref[i], transpose_dataEEG[:,index_ref[i]], axis=0)
-        return Xpp
+            return Xpp
+
+        except:
+            return dataEEG
 
     def filterAdaptative(self,Y, dataEEG, dataRef, W, V, index_ref,index_data,nsamples):
         
